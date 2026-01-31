@@ -1,0 +1,21 @@
+[project]
+name = "mcp-code-indexer"
+version = "0.4.0"
+description = "Local semantic codebase indexer as an MCP server (Qdrant + SQLite)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "mcp[cli]>=1.7.0",
+  "qdrant-client>=1.10.0",
+  "pathspec>=0.12.1",
+  "fastembed>=0.6.0",
+  "numpy>=1.26.0",
+  "pydantic>=2.6.0",
+]
+
+[project.scripts]
+mcp-code-indexer = "mcp_code_indexer.__main__:main"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"

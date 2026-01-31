@@ -1,0 +1,6 @@
+# Add extra ignore rules here (same style as .gitignore)
+# Examples:
+# **/.venv/
+# **/node_modules/
+# **/dist/
+# **/build/
