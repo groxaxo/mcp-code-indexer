@@ -1,5 +1,9 @@
 # mcp-code-indexer (local semantic codebase indexing MCP server)
 
+[![GitHub](https://img.shields.io/badge/GitHub-groxaxo/mcp--code--indexer-blue)](https://github.com/groxaxo/mcp-code-indexer)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
+
 This is a **local** MCP server that indexes a codebase into **Qdrant + SQLite** and exposes tools like:
 - `index_init`, `index_refresh`, `index_status`, `index_stats`
 - `codebase_search`, `codebase_fetch`
