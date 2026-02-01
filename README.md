@@ -1,69 +1,88 @@
-# mcp-code-indexer (v0.4.0)
+# 🔍 mcp-code-indexer
 
-[![GitHub](https://img.shields.io/badge/GitHub-groxaxo/mcp--code--indexer-blue)](https://github.com/groxaxo/mcp-code-indexer)
+### **Your AI Coding Assistant's Semantic Memory for Codebases**
+
+[![PyPI Version](https://img.shields.io/pypi/v/mcp-code-indexer)](https://pypi.org/project/mcp-code-indexer/)
+[![Python Version](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
-[![PyPI](https://img.shields.io/badge/pypi-v0.4.0-blue)](https://pypi.org/project/mcp-code-indexer/)
+[![GitHub Stars](https://img.shields.io/github/stars/groxaxo/mcp-code-indexer)](https://github.com/groxaxo/mcp-code-indexer)
+[![Downloads](https://img.shields.io/pypi/dm/mcp-code-indexer)](https://pypi.org/project/mcp-code-indexer/)
 
-**Local semantic codebase indexing MCP server** with Qdrant + SQLite backend.
+**Transform your AI coding assistant into a codebase expert** with local-first semantic indexing. mcp-code-indexer is an MCP server that gives Claude, Cursor, and Windsurf deep understanding of your entire codebase through hybrid search, callgraph analysis, and git-aware indexing.
 
-## ✨ Features
+> ⚡ **Zero cloud dependencies** • 🔒 **Code never leaves your machine** • 🧠 **Semantic + keyword hybrid search**
 
-- **🔍 Semantic + BM25 hybrid search** - Combines vector embeddings with keyword matching
-- **🧠 Python AST analysis** - Function/class chunking with callgraph and symbol references
-- **📸 Git snapshot support** - Index and query different git commits
-- **⚡ Incremental indexing** - Hash-based reindexing (only changed files)
-- **🔒 Local-first** - No code leaves your machine (unless you change the embedder)
-- **🛡️ Security-first** - Repo root allowlist + path normalization
+## 🚀 Why mcp-code-indexer?
 
-## 🚀 Quick Start
+Tired of AI assistants guessing about your codebase? mcp-code-indexer gives them **perfect memory**:
 
-### 1) Start Qdrant
+| Without mcp-code-indexer | With mcp-code-indexer |
+|--------------------------|----------------------|
+| ❌ "Where's the auth middleware?" | ✅ **"Found auth middleware in `src/auth.py:42-78`"** |
+| ❌ "What calls this function?" | ✅ **"`process_user()` is called by 3 functions across 2 files"** |
+| ❌ "What changed in commit abc123?" | ✅ **"Commit abc123 added user validation in `models/user.py`"** |
+| ❌ Manual file navigation | ✅ **Semantic search across entire codebase** |
+
+## ✨ Core Features
+
+### 🔍 **Hybrid Semantic Search**
+- **Vector embeddings** + **BM25 keyword matching** = Best of both worlds
+- **Cross-encoder reranking** for precision results (optional)
+- **Multi-modal queries**: "Find authentication middleware" or "search for database connection code"
+
+### 🧠 **Deep Code Understanding**
+- **Python AST analysis** - Function/class boundaries with semantic chunking
+- **Callgraph visualization** - See function relationships (depth configurable)
+- **Symbol references** - Find all usages of classes, functions, variables
+- **Git-aware indexing** - Query specific commits or working tree changes
+
+### ⚡ **Performance & Security**
+- **Incremental indexing** - Only reindex changed files (hash-based)
+- **Local-first architecture** - Your code never leaves your machine
+- **Security allowlist** - Whitelist specific repository roots only
+- **Fast embeddings** - ONNX-based with optional GPU acceleration
+
+## 🚀 Get Started in 60 Seconds
+
+### 1️⃣ **Start Qdrant (Vector Database)**
 ```bash
 docker compose up -d
 ```
+> Qdrant runs locally in Docker - no cloud services required
 
-### 2) Install from PyPI or GitHub
+### 2️⃣ **Install mcp-code-indexer**
 ```bash
-# From PyPI
+# Install from PyPI (recommended)
 pip install mcp-code-indexer
 
-# Or from GitHub (latest)
+# Or install latest from GitHub
 pip install git+https://github.com/groxaxo/mcp-code-indexer.git
 
-# Optional: GPU embeddings (ONNX)
+# Optional: GPU acceleration for embeddings
 pip install fastembed-gpu
 ```
 
-### 3) Configure allowed repositories
+### 3️⃣ **Configure Your Codebases**
 ```bash
-export MCP_ALLOWED_ROOTS="$HOME/projects:$HOME/code"
+# Allow specific directories (colon-separated)
+export MCP_ALLOWED_ROOTS="$HOME/projects:$HOME/work:$HOME/code"
+
+# Or allow current directory only
+export MCP_ALLOWED_ROOTS="$(pwd)"
 ```
 
-### 4) Run the MCP server
+### 4️⃣ **Launch & Connect**
 ```bash
+# Start the MCP server
 python -m mcp_code_indexer
 ```
 
-## 📋 MCP Host Integration
+Now connect to your favorite AI coding assistant:
 
-### Claude Desktop (Linux/macOS)
-Edit your Claude config JSON (`~/.config/Claude/claude_desktop_config.json`):
+## 🤖 **AI Assistant Integration**
 
-```json
-{
-  "mcpServers": {
-    "code-indexer": {
-      "command": "python",
-      "args": ["-m", "mcp_code_indexer"]
-    }
-  }
-}
-```
-
-### Cursor / Windsurf
-Add to your MCP configuration:
-
+### **Claude Desktop** (Linux/macOS)
+Edit `~/.config/Claude/claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
@@ -71,61 +90,101 @@ Add to your MCP configuration:
       "command": "python",
       "args": ["-m", "mcp_code_indexer"],
       "env": {
-        "MCP_ALLOWED_ROOTS": "/path/to/your/projects"
+        "MCP_ALLOWED_ROOTS": "/absolute/path/to/your/code"
       }
     }
   }
 }
 ```
 
-## 🎯 Tool Examples
-
-### Indexing
-```python
-index_init(repo_root="/home/you/projects/myrepo")
-index_refresh(repo_root="/home/you/projects/myrepo", rel_paths=["src/main.py"])
+### **Cursor IDE**
+Add to your MCP settings:
+```json
+{
+  "mcpServers": {
+    "code-indexer": {
+      "command": "python",
+      "args": ["-m", "mcp_code_indexer"],
+      "env": {
+        "MCP_ALLOWED_ROOTS": "/Users/you/projects"
+      }
+    }
+  }
+}
 ```
 
-### Search & Navigation
+### **Windsurf / Continue**
+Configure in your IDE's MCP settings with similar JSON structure.
+
+> **💡 Pro Tip**: Restart your AI assistant after configuration changes!
+
+## 🎯 **See It in Action**
+
+### **Index Your Codebase**
 ```python
-# Hybrid search (semantic + keyword)
-codebase_search(
+# Initialize indexing for a repository
+index_init(repo_root="/home/you/projects/awesome-app")
+
+# Incremental refresh (only changed files)
+index_refresh(repo_root="/home/you/projects/awesome-app")
+```
+
+### **🔍 Semantic Code Search**
+```python
+# Hybrid search: "Find authentication middleware"
+results = codebase_search(
     query="authentication middleware",
-    repo_root="/home/you/projects/myrepo",
+    repo_root="/home/you/projects/awesome-app",
     top_k=10,
-    mode="hybrid"
+    mode="hybrid"  # semantic + keyword
 )
 
-# Find Python symbols
+# Returns: [{file: "src/auth.py", lines: "42-78", content: "...", score: 0.92}]
+```
+
+### **🧭 Navigate Code Relationships**
+```python
+# Find all usages of a class
 symbol_find(
-    repo_root="/home/you/projects/myrepo",
-    name="User",
+    repo_root="/home/you/projects/awesome-app",
+    name="UserModel",
     language="python"
 )
 
-# Get symbol references
+# Visualize function call relationships
+callgraph(
+    repo_root="/home/you/projects/awesome-app",
+    symbol_id="process_user_abc123",
+    depth=3,
+    direction="both"  # incoming & outgoing calls
+)
+
+# Get symbol references across codebase
 symbol_references(
-    repo_root="/home/you/projects/myrepo",
+    repo_root="/home/you/projects/awesome-app",
     symbol_name="Database",
     limit=20
 )
-
-# Explore callgraph
-callgraph(
-    repo_root="/home/you/projects/myrepo",
-    symbol_id="abc123...",
-    depth=2,
-    direction="out"
-)
-
-# List git snapshots
-git_list_snapshots(repo_root="/home/you/projects/myrepo")
 ```
 
-### File Access
+### **📸 Git-Aware Queries**
 ```python
+# Search specific git commit
+codebase_search(
+    query="user validation",
+    repo_root="/home/you/projects/awesome-app",
+    git_commit="abc123def"
+)
+
+# List all indexed snapshots
+git_list_snapshots(repo_root="/home/you/projects/awesome-app")
+```
+
+### **📄 Fetch Code Snippets**
+```python
+# Get specific file sections
 codebase_fetch(
-    repo_root="/home/you/projects/myrepo",
+    repo_root="/home/you/projects/awesome-app",
     file_path="src/auth.py",
     start_line=10,
     end_line=50
@@ -133,55 +192,143 @@ codebase_fetch(
 ```
 
 
-## 🔧 Advanced Features
+## ⚙️ **Advanced Configuration**
 
-### Hybrid Search & Reranking
-- **Default mode**: `hybrid` (semantic + BM25 keyword search)
-- **Available modes**: `semantic` | `lexical` | `hybrid`
-- **Hybrid weight**: `alpha` parameter (semantic weight; lexical = 1-alpha)
-
-**Optional cross-encoder reranking**:
-```bash
-pip install sentence-transformers
-```
+### **Search Modes & Reranking**
 ```python
-codebase_search(..., mode='hybrid', use_rerank=True)
+# Choose your search strategy
+codebase_search(..., mode="hybrid")      # Default: semantic + keyword
+codebase_search(..., mode="semantic")    # Pure vector similarity
+codebase_search(..., mode="lexical")     # Pure keyword (BM25)
+
+# Advanced: Cross-encoder reranking for precision
+pip install sentence-transformers
+codebase_search(..., use_rerank=True)    # Re-rank results for accuracy
 ```
 
-### Python AST Analysis
-- **Function/class chunking**: AST-based semantic boundaries
-- **Symbol references**: Find usages of Python symbols across codebase
-- **Callgraph analysis**: Static function call relationships (depth configurable)
+### **Python AST Analysis**
+- **Smart chunking**: Functions/classes as semantic units (not arbitrary lines)
+- **Symbol resolution**: Track imports, class inheritance, function calls
+- **Reference tracking**: Find where symbols are used across files
 
-### Git Snapshot Support
-- **Per-commit indexing**: Each index run stores current `HEAD` commit
-- **Snapshot querying**: Search specific git commits
-- **Working tree support**: Index uncommitted changes as `working_tree`
+### **Git Integration**
+- **Commit-aware indexing**: Each `index_init` stores current git commit
+- **Multi-version querying**: Search code as it existed at any commit
+- **Working tree support**: Index uncommitted changes separately
 
-## 🏗️ Architecture
-
-```
-┌─────────────────┐    ┌─────────────┐    ┌─────────────┐
-│   MCP Client    │◄──►│  MCP Server │◄──►│   Qdrant    │
-│  (Claude, etc.) │    │ (Python)    │    │ (Vector DB) │
-└─────────────────┘    └─────────────┘    └─────────────┘
-                              │
-                              ▼
-                       ┌─────────────┐
-                       │   SQLite    │
-                       │ (Metadata)  │
-                       └─────────────┘
+### **Performance Tuning**
+```bash
+# Environment variables for optimization
+export MCP_EMBEDDER="fastembed"          # Default embedding model
+export MCP_CHUNK_SIZE=1000               # Characters per chunk
+export MCP_OVERLAP=200                   # Chunk overlap for context
 ```
 
-## 📈 Roadmap
-- [ ] Tree-sitter multi-language support
-- [ ] Enhanced callgraph for more languages
-- [ ] Web UI for visualization
-- [ ] Batch indexing improvements
-- [ ] Plugin system for custom embedders
+## 🏗️ **Architecture**
 
-## 🤝 Contributing
-Contributions welcome! Please open issues or PRs on [GitHub](https://github.com/groxaxo/mcp-code-indexer).
+### **Local-First Design**
+```
+┌─────────────────┐    ┌─────────────────────┐    ┌─────────────┐
+│   AI Assistant  │◄──►│  mcp-code-indexer   │◄──►│   Qdrant    │
+│  (Claude/Cursor)│    │    MCP Server       │    │ (Vector DB) │
+└─────────────────┘    └─────────────────────┘    └─────────────┘
+        │                          │
+        │ MCP Protocol             │ Local Network
+        ▼                          ▼
+┌─────────────────┐        ┌─────────────┐
+│  Your Codebase  │        │   SQLite    │
+│   (Local Files) │        │ (Metadata)  │
+└─────────────────┘        └─────────────┘
+```
 
-## 📄 License
-MIT License - see [LICENSE](LICENSE) file for details.
+### **Key Design Principles**
+1. **🔒 Privacy First**: Code never leaves your machine
+2. **⚡ Performance**: Incremental indexing, fast embeddings
+3. **🧠 Intelligence**: AST analysis + semantic search
+4. **📈 Scalable**: Handles large codebases efficiently
+
+## 🚧 **Roadmap & Future**
+
+### **Coming Soon** 🚀
+- [ ] **Multi-language support** (JavaScript/TypeScript, Go, Rust via tree-sitter)
+- [ ] **Enhanced callgraphs** for complex codebases
+- [ ] **Web UI dashboard** for visualization and management
+- [ ] **Batch indexing** for large monorepos
+- [ ] **Plugin system** for custom embedders and analyzers
+- [ ] **Real-time indexing** with file watchers
+
+### **Community Ideas** 💡
+Have a feature request? [Open an issue](https://github.com/groxaxo/mcp-code-indexer/issues) or join the discussion!
+
+## 🤝 **Contributing**
+
+We love contributions! Here's how you can help:
+
+1. **Report bugs** 🐛 - [Open an issue](https://github.com/groxaxo/mcp-code-indexer/issues)
+2. **Suggest features** 💡 - Share your ideas
+3. **Submit PRs** 🔧 - Fix bugs or add features
+4. **Improve docs** 📚 - Help others get started
+5. **Share feedback** 🗣️ - Tell us what works and what doesn't
+
+### **Development & Testing**
+
+#### **Setup Testing Environment**
+```bash
+# Method 1: Using conda (recommended)
+./setup_test_env.sh
+
+# Method 2: Manual setup
+conda create -n mcp-test python=3.10 -y
+conda activate mcp-test
+pip install -e .
+pip install pytest pytest-asyncio pytest-cov pytest-mock
+```
+
+#### **Running Tests**
+```bash
+# Run all tests
+python -m pytest tests/ -v
+
+# Run unit tests only
+python -m pytest tests/unit/ -v
+
+# Run integration tests only
+python -m pytest tests/integration/ -v
+
+# Run with coverage report
+python -m pytest tests/ --cov=mcp_code_indexer --cov-report=html
+
+# Run simple test runner (no pytest dependencies)
+python simple_test.py
+```
+
+#### **Development Setup**
+```bash
+# Clone the repository
+git clone https://github.com/groxaxo/mcp-code-indexer.git
+cd mcp-code-indexer
+
+# Install development dependencies
+pip install -e ".[dev]"
+
+# Run tests
+pytest
+
+# Format code
+ruff format .
+```
+
+## 📄 **License**
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+## ⭐ **Support the Project**
+
+If mcp-code-indexer makes your AI coding assistant smarter:
+- **Star the repo** ⭐ on [GitHub](https://github.com/groxaxo/mcp-code-indexer)
+- **Share with colleagues** who use AI coding tools
+- **Contribute** to make it better for everyone
+
+**Happy coding with your AI assistant!** 🚀
