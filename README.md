@@ -1,116 +1,187 @@
-# mcp-code-indexer (local semantic codebase indexing MCP server)
+# mcp-code-indexer (v0.4.0)
 
 [![GitHub](https://img.shields.io/badge/GitHub-groxaxo/mcp--code--indexer-blue)](https://github.com/groxaxo/mcp-code-indexer)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
+[![PyPI](https://img.shields.io/badge/pypi-v0.4.0-blue)](https://pypi.org/project/mcp-code-indexer/)
 
-This is a **local** MCP server that indexes a codebase into **Qdrant + SQLite** and exposes tools like:
-- `index_init`, `index_refresh`, `index_status`, `index_stats`
-- `codebase_search`, `codebase_fetch`
-- `symbol_find` (Python-only for now)
+**Local semantic codebase indexing MCP server** with Qdrant + SQLite backend.
 
-It’s designed to be:
-- **Local-first** (no code leaves your machine unless you change the embedder)
-- **Incremental** (hash-based reindexing)
-- **Safe by default** (repo root allowlist + path normalization)
+## ✨ Features
 
-## What you need
+- **🔍 Semantic + BM25 hybrid search** - Combines vector embeddings with keyword matching
+- **🧠 Python AST analysis** - Function/class chunking with callgraph and symbol references
+- **📸 Git snapshot support** - Index and query different git commits
+- **⚡ Incremental indexing** - Hash-based reindexing (only changed files)
+- **🔒 Local-first** - No code leaves your machine (unless you change the embedder)
+- **🛡️ Security-first** - Repo root allowlist + path normalization
 
-- Python 3.10+
-- Docker (recommended) to run Qdrant locally
-
-## Quick start
+## 🚀 Quick Start
 
 ### 1) Start Qdrant
 ```bash
 docker compose up -d
 ```
 
-### 2) Create a venv + install
+### 2) Install from PyPI or GitHub
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -U pip
-pip install -e .
+# From PyPI
+pip install mcp-code-indexer
+
+# Or from GitHub (latest)
+pip install git+https://github.com/groxaxo/mcp-code-indexer.git
+
+# Optional: GPU embeddings (ONNX)
+pip install fastembed-gpu
 ```
 
-> Optional GPU embeddings (ONNX):  
-> `pip install fastembed-gpu`
-
-### 3) Allow your repo roots (important)
-Set a colon-separated allowlist:
+### 3) Configure allowed repositories
 ```bash
 export MCP_ALLOWED_ROOTS="$HOME/projects:$HOME/code"
 ```
 
-### 4) Run the MCP server (stdio)
+### 4) Run the MCP server
 ```bash
 python -m mcp_code_indexer
 ```
 
-## Using it in an MCP host
+## 📋 MCP Host Integration
 
-### Claude Desktop example (Linux/macOS)
-Edit your Claude config JSON and add:
+### Claude Desktop (Linux/macOS)
+Edit your Claude config JSON (`~/.config/Claude/claude_desktop_config.json`):
 
 ```json
 {
   "mcpServers": {
     "code-indexer": {
-      "command": "bash",
-      "args": ["-lc", "cd /ABS/PATH/mcp-code-indexer && source .venv/bin/activate && python -m mcp_code_indexer"]
+      "command": "python",
+      "args": ["-m", "mcp_code_indexer"]
     }
   }
 }
 ```
 
-## Tool examples
+### Cursor / Windsurf
+Add to your MCP configuration:
 
-- Index a repo:
-  - `index_init(repo_root="/home/you/projects/myrepo")`
-- Search:
-  - `codebase_search(query="where is auth handled?", repo_root="/home/you/projects/myrepo", top_k=8)`
-- Fetch lines:
-  - `codebase_fetch(repo_root="/home/you/projects/myrepo", file_path="src/auth.py", start_line=1, end_line=120)`
+```json
+{
+  "mcpServers": {
+    "code-indexer": {
+      "command": "python",
+      "args": ["-m", "mcp_code_indexer"],
+      "env": {
+        "MCP_ALLOWED_ROOTS": "/path/to/your/projects"
+      }
+    }
+  }
+}
+```
 
-## Notes / Roadmap
-- Current chunking:
-  - Python: AST-based function/class chunks
-  - Others: line-window chunks
-- Next upgrades:
-  - Tree-sitter multi-language chunking
-  - Hybrid lexical (BM25) + rerank
-  - Callgraph for more languages
+## 🎯 Tool Examples
+
+### Indexing
+```python
+index_init(repo_root="/home/you/projects/myrepo")
+index_refresh(repo_root="/home/you/projects/myrepo", rel_paths=["src/main.py"])
+```
+
+### Search & Navigation
+```python
+# Hybrid search (semantic + keyword)
+codebase_search(
+    query="authentication middleware",
+    repo_root="/home/you/projects/myrepo",
+    top_k=10,
+    mode="hybrid"
+)
+
+# Find Python symbols
+symbol_find(
+    repo_root="/home/you/projects/myrepo",
+    name="User",
+    language="python"
+)
+
+# Get symbol references
+symbol_references(
+    repo_root="/home/you/projects/myrepo",
+    symbol_name="Database",
+    limit=20
+)
+
+# Explore callgraph
+callgraph(
+    repo_root="/home/you/projects/myrepo",
+    symbol_id="abc123...",
+    depth=2,
+    direction="out"
+)
+
+# List git snapshots
+git_list_snapshots(repo_root="/home/you/projects/myrepo")
+```
+
+### File Access
+```python
+codebase_fetch(
+    repo_root="/home/you/projects/myrepo",
+    file_path="src/auth.py",
+    start_line=10,
+    end_line=50
+)
+```
 
 
-## Hybrid search + rerank
+## 🔧 Advanced Features
 
-- Default `codebase_search` mode is **hybrid** (semantic + BM25 keyword search).
-- You can force a mode: `mode='semantic' | 'lexical' | 'hybrid'`.
-- Hybrid weight: `alpha` (semantic weight; lexical = 1-alpha).
+### Hybrid Search & Reranking
+- **Default mode**: `hybrid` (semantic + BM25 keyword search)
+- **Available modes**: `semantic` | `lexical` | `hybrid`
+- **Hybrid weight**: `alpha` parameter (semantic weight; lexical = 1-alpha)
 
-### Optional cross-encoder reranking
-
-Install:
+**Optional cross-encoder reranking**:
 ```bash
 pip install sentence-transformers
 ```
-Then call:
-- `codebase_search(..., mode='hybrid', use_rerank=True)`
+```python
+codebase_search(..., mode='hybrid', use_rerank=True)
+```
 
+### Python AST Analysis
+- **Function/class chunking**: AST-based semantic boundaries
+- **Symbol references**: Find usages of Python symbols across codebase
+- **Callgraph analysis**: Static function call relationships (depth configurable)
 
+### Git Snapshot Support
+- **Per-commit indexing**: Each index run stores current `HEAD` commit
+- **Snapshot querying**: Search specific git commits
+- **Working tree support**: Index uncommitted changes as `working_tree`
 
-## Callgraph + references (Python)
+## 🏗️ Architecture
 
-- `symbol_references(repo_root, symbol_name, git_ref?, path_prefix?, limit?)`
-- `callgraph(repo_root, symbol_id, depth=1, direction='out'|'in'|'both', git_ref?)`
+```
+┌─────────────────┐    ┌─────────────┐    ┌─────────────┐
+│   MCP Client    │◄──►│  MCP Server │◄──►│   Qdrant    │
+│  (Claude, etc.) │    │ (Python)    │    │ (Vector DB) │
+└─────────────────┘    └─────────────┘    └─────────────┘
+                              │
+                              ▼
+                       ┌─────────────┐
+                       │   SQLite    │
+                       │ (Metadata)  │
+                       └─────────────┘
+```
 
-This is **static, best-effort** and meant for navigation.
+## 📈 Roadmap
+- [ ] Tree-sitter multi-language support
+- [ ] Enhanced callgraph for more languages
+- [ ] Web UI for visualization
+- [ ] Batch indexing improvements
+- [ ] Plugin system for custom embedders
 
+## 🤝 Contributing
+Contributions welcome! Please open issues or PRs on [GitHub](https://github.com/groxaxo/mcp-code-indexer).
 
-## Git snapshots
-
-- Each index run stores the current `HEAD` commit as `git_ref` (or `working_tree`).
-- Index data is kept **per git_ref**: vectors, BM25, symbols, callgraph.
-- List snapshots: `git_list_snapshots(repo_root)`
-- Query a snapshot: `codebase_search(..., filters={'git_ref': '<sha>'})`
+## 📄 License
+MIT License - see [LICENSE](LICENSE) file for details.
