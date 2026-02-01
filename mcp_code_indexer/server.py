@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 from typing import Any, Optional
 
-from mcp.server.mcpserver import MCPServer, Context
+from mcp.server.fastmcp import FastMCP, Context
 from mcp.server.session import ServerSession
 
 from .config import load_config
@@ -21,7 +21,7 @@ cfg = load_config()
 cfg.data_dir.mkdir(parents=True, exist_ok=True)
 db_path = (cfg.data_dir / "metadata.db").resolve()
 
-mcp = MCPServer(name="Local Code Indexer")
+mcp = FastMCP(name="Local Code Indexer")
 
 job_mgr = JobManager(cfg, db_path)
 search_engine = SearchEngine(cfg, db_path)
@@ -30,17 +30,45 @@ search_engine = SearchEngine(cfg, db_path)
 def _stats_for_workspace(wid: str, git_ref: str | None = None) -> dict[str, Any]:
     conn = connect(db_path)
     if git_ref:
-        files = fetch_one(conn, "SELECT COUNT(*) AS n FROM files_snap WHERE workspace_id=? AND git_ref=?", (wid, git_ref))
-        symbols = fetch_one(conn, "SELECT COUNT(*) AS n FROM symbols_snap WHERE workspace_id=? AND git_ref=?", (wid, git_ref))
-        pysyms = fetch_one(conn, "SELECT COUNT(*) AS n FROM py_symbols WHERE workspace_id=? AND git_ref=?", (wid, git_ref))
-        refs = fetch_one(conn, "SELECT COUNT(*) AS n FROM py_refs WHERE workspace_id=? AND git_ref=?", (wid, git_ref))
+        files = fetch_one(
+            conn,
+            "SELECT COUNT(*) AS n FROM files_snap WHERE workspace_id=? AND git_ref=?",
+            (wid, git_ref),
+        )
+        symbols = fetch_one(
+            conn,
+            "SELECT COUNT(*) AS n FROM symbols_snap WHERE workspace_id=? AND git_ref=?",
+            (wid, git_ref),
+        )
+        pysyms = fetch_one(
+            conn,
+            "SELECT COUNT(*) AS n FROM py_symbols WHERE workspace_id=? AND git_ref=?",
+            (wid, git_ref),
+        )
+        refs = fetch_one(
+            conn,
+            "SELECT COUNT(*) AS n FROM py_refs WHERE workspace_id=? AND git_ref=?",
+            (wid, git_ref),
+        )
     else:
-        files = fetch_one(conn, "SELECT COUNT(*) AS n FROM files_snap WHERE workspace_id=?", (wid,))
-        symbols = fetch_one(conn, "SELECT COUNT(*) AS n FROM symbols_snap WHERE workspace_id=?", (wid,))
-        pysyms = fetch_one(conn, "SELECT COUNT(*) AS n FROM py_symbols WHERE workspace_id=?", (wid,))
-        refs = fetch_one(conn, "SELECT COUNT(*) AS n FROM py_refs WHERE workspace_id=?", (wid,))
-    jobs = fetch_one(conn, "SELECT COUNT(*) AS n FROM jobs WHERE workspace_id=?", (wid,))
-    snaps = fetch_one(conn, "SELECT COUNT(*) AS n FROM snapshots WHERE workspace_id=?", (wid,))
+        files = fetch_one(
+            conn, "SELECT COUNT(*) AS n FROM files_snap WHERE workspace_id=?", (wid,)
+        )
+        symbols = fetch_one(
+            conn, "SELECT COUNT(*) AS n FROM symbols_snap WHERE workspace_id=?", (wid,)
+        )
+        pysyms = fetch_one(
+            conn, "SELECT COUNT(*) AS n FROM py_symbols WHERE workspace_id=?", (wid,)
+        )
+        refs = fetch_one(
+            conn, "SELECT COUNT(*) AS n FROM py_refs WHERE workspace_id=?", (wid,)
+        )
+    jobs = fetch_one(
+        conn, "SELECT COUNT(*) AS n FROM jobs WHERE workspace_id=?", (wid,)
+    )
+    snaps = fetch_one(
+        conn, "SELECT COUNT(*) AS n FROM snapshots WHERE workspace_id=?", (wid,)
+    )
     return {
         "files_indexed": int((files or {}).get("n", 0)),
         "symbols_indexed": int((symbols or {}).get("n", 0)),
@@ -52,7 +80,7 @@ def _stats_for_workspace(wid: str, git_ref: str | None = None) -> dict[str, Any]
 
 
 @mcp.tool()
-async def index_init(repo_root: str, ctx: Context[ServerSession, None]) -> dict:
+async def index_init(repo_root: str, ctx: Context[ServerSession, None, None]) -> dict:
     """
     Index an entire repo_root locally (incremental by file hash).
     Returns: { job_id, workspace_id }
@@ -68,8 +96,11 @@ async def index_init(repo_root: str, ctx: Context[ServerSession, None]) -> dict:
     )
     return {"job_id": job_id, "workspace_id": wid}
 
+
 @mcp.tool()
-async def index_refresh(repo_root: str, rel_paths: list[str], ctx: Context[ServerSession, None]) -> dict:
+async def index_refresh(
+    repo_root: str, rel_paths: list[str], ctx: Context[ServerSession, None, None]
+) -> dict:
     """
     Incremental index for a list of *relative* paths in the repo.
     Returns: { job_id, workspace_id }
@@ -93,6 +124,7 @@ async def index_refresh(repo_root: str, rel_paths: list[str], ctx: Context[Serve
     )
     return {"job_id": job_id, "workspace_id": wid}
 
+
 @mcp.tool()
 def index_status(job_id: str) -> dict:
     """
@@ -107,6 +139,7 @@ def index_status(job_id: str) -> dict:
         row["result"] = result
     return row
 
+
 @mcp.tool()
 def index_stats(repo_root: str, git_ref: str | None = None) -> dict:
     """
@@ -114,7 +147,12 @@ def index_stats(repo_root: str, git_ref: str | None = None) -> dict:
     """
     rr = normalize_repo_root(repo_root, cfg.allowed_roots)
     wid = workspace_id_for(rr)
-    return {"workspace_id": wid, "repo_root": str(rr), "git_ref": git_ref, "stats": _stats_for_workspace(wid, git_ref)}
+    return {
+        "workspace_id": wid,
+        "repo_root": str(rr),
+        "git_ref": git_ref,
+        "stats": _stats_for_workspace(wid, git_ref),
+    }
 
 
 @mcp.tool()
@@ -124,8 +162,8 @@ def codebase_search(
     top_k: int = 8,
     filters: dict[str, Any] | None = None,
     path_prefix: str | None = None,
-    mode: str = "hybrid",   # "semantic" | "lexical" | "hybrid"
-    alpha: float = 0.7,     # hybrid weight: semantic (alpha) vs lexical (1-alpha)
+    mode: str = "hybrid",  # "semantic" | "lexical" | "hybrid"
+    alpha: float = 0.7,  # hybrid weight: semantic (alpha) vs lexical (1-alpha)
     use_rerank: bool = False,
     rerank_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2",
 ) -> dict:
@@ -144,9 +182,13 @@ def codebase_search(
     mode_l = (mode or "hybrid").strip().lower()
 
     if mode_l == "semantic":
-        hits = search_engine.semantic_search(rr, query=query, top_k=int(top_k), filters=filters, path_prefix=path_prefix)
+        hits = search_engine.semantic_search(
+            rr, query=query, top_k=int(top_k), filters=filters, path_prefix=path_prefix
+        )
     elif mode_l == "lexical":
-        hits = search_engine.lexical_search(rr, query=query, top_k=int(top_k), filters=filters, path_prefix=path_prefix)
+        hits = search_engine.lexical_search(
+            rr, query=query, top_k=int(top_k), filters=filters, path_prefix=path_prefix
+        )
         # strip private text fields if any
         for h in hits:
             h.pop("_text", None)
@@ -170,8 +212,11 @@ def codebase_search(
 
     return {"matches": hits}
 
+
 @mcp.tool()
-def codebase_fetch(repo_root: str, file_path: str, start_line: int = 1, end_line: int = 200) -> dict:
+def codebase_fetch(
+    repo_root: str, file_path: str, start_line: int = 1, end_line: int = 200
+) -> dict:
     """
     Fetch raw file contents by line range (safe, bounded).
     file_path must be relative to repo_root.
@@ -186,7 +231,7 @@ def codebase_fetch(repo_root: str, file_path: str, start_line: int = 1, end_line
     text = abs_path.read_text(encoding="utf-8", errors="ignore").splitlines()
     sl = min(start, len(text) + 1)
     el = min(end, len(text))
-    snippet = "\n".join(text[sl-1:el])
+    snippet = "\n".join(text[sl - 1 : el])
     return {
         "file_path": Path(file_path).as_posix(),
         "start_line": sl,
@@ -194,14 +239,24 @@ def codebase_fetch(repo_root: str, file_path: str, start_line: int = 1, end_line
         "text": snippet,
     }
 
+
 @mcp.tool()
-def symbol_find(repo_root: str, name: str, language: str | None = "python", path_prefix: str | None = None, limit: int = 50) -> dict:
+def symbol_find(
+    repo_root: str,
+    name: str,
+    language: str | None = "python",
+    path_prefix: str | None = None,
+    limit: int = 50,
+) -> dict:
     """
     Find symbols (currently: python-only).
     """
     rr = normalize_repo_root(repo_root, cfg.allowed_roots)
-    rows = search_engine.symbol_find(rr, name=name, language=language, path_prefix=path_prefix, limit=int(limit))
+    rows = search_engine.symbol_find(
+        rr, name=name, language=language, path_prefix=path_prefix, limit=int(limit)
+    )
     return {"symbols": rows}
+
 
 def run_stdio() -> None:
     # Stdio transport (recommended for local MCP servers)
@@ -218,8 +273,15 @@ def symbol_references(
 ) -> dict:
     """Python best-effort references for a symbol by name."""
     rr = normalize_repo_root(repo_root, cfg.allowed_roots)
-    rows = search_engine.py_symbol_references(rr, symbol_name=symbol_name, git_ref=git_ref, path_prefix=path_prefix, limit=int(limit))
+    rows = search_engine.py_symbol_references(
+        rr,
+        symbol_name=symbol_name,
+        git_ref=git_ref,
+        path_prefix=path_prefix,
+        limit=int(limit),
+    )
     return {"references": rows}
+
 
 @mcp.tool()
 def callgraph(
@@ -231,7 +293,10 @@ def callgraph(
 ) -> dict:
     """Python best-effort callgraph neighborhood starting from a symbol_id."""
     rr = normalize_repo_root(repo_root, cfg.allowed_roots)
-    return search_engine.py_callgraph(rr, symbol_id=symbol_id, depth=int(depth), direction=direction, git_ref=git_ref)
+    return search_engine.py_callgraph(
+        rr, symbol_id=symbol_id, depth=int(depth), direction=direction, git_ref=git_ref
+    )
+
 
 @mcp.tool()
 def git_list_snapshots(repo_root: str, limit: int = 50) -> dict:
@@ -239,5 +304,9 @@ def git_list_snapshots(repo_root: str, limit: int = 50) -> dict:
     rr = normalize_repo_root(repo_root, cfg.allowed_roots)
     wid = workspace_id_for(rr)
     conn = connect(db_path)
-    rows = fetch_all(conn, "SELECT git_ref, indexed_at FROM snapshots WHERE workspace_id=? ORDER BY indexed_at DESC LIMIT ?", (wid, int(limit)))
+    rows = fetch_all(
+        conn,
+        "SELECT git_ref, indexed_at FROM snapshots WHERE workspace_id=? ORDER BY indexed_at DESC LIMIT ?",
+        (wid, int(limit)),
+    )
     return {"workspace_id": wid, "snapshots": rows}
