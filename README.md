@@ -44,25 +44,35 @@ Tired of AI assistants guessing about your codebase? mcp-code-indexer gives them
 
 ## 🚀 Get Started in 60 Seconds
 
-### 1️⃣ **Start Qdrant (Vector Database)**
+### **Automated Installation (Recommended)**
+```bash
+# Clone and run the installation script
+git clone https://github.com/groxaxo/mcp-code-indexer.git
+cd mcp-code-indexer
+./install.sh
+```
+
+The automated installer will:
+- ✅ Check Python version (3.10+ required)
+- ✅ Create virtual environment (optional)
+- ✅ Install mcp-code-indexer package
+- ✅ Start Qdrant with Docker (if available)
+- ✅ Run tests (development mode)
+
+### **Manual Installation**
+
+#### 1️⃣ **Install from PyPI**
+```bash
+pip install mcp-code-indexer
+```
+
+#### 2️⃣ **Start Qdrant (Vector Database)**
 ```bash
 docker compose up -d
 ```
 > Qdrant runs locally in Docker - no cloud services required
 
-### 2️⃣ **Install mcp-code-indexer**
-```bash
-# Install from PyPI (recommended)
-pip install mcp-code-indexer
-
-# Or install latest from GitHub
-pip install git+https://github.com/groxaxo/mcp-code-indexer.git
-
-# Optional: GPU acceleration for embeddings
-pip install fastembed-gpu
-```
-
-### 3️⃣ **Configure Your Codebases**
+#### 3️⃣ **Configure Your Codebases**
 ```bash
 # Allow specific directories (colon-separated)
 export MCP_ALLOWED_ROOTS="$HOME/projects:$HOME/work:$HOME/code"
@@ -71,7 +81,7 @@ export MCP_ALLOWED_ROOTS="$HOME/projects:$HOME/work:$HOME/code"
 export MCP_ALLOWED_ROOTS="$(pwd)"
 ```
 
-### 4️⃣ **Launch & Connect**
+#### 4️⃣ **Launch & Connect**
 ```bash
 # Start the MCP server
 python -m mcp_code_indexer
@@ -272,16 +282,28 @@ We love contributions! Here's how you can help:
 
 ### **Development & Testing**
 
-#### **Setup Testing Environment**
+#### **Automated Setup (Recommended)**
 ```bash
-# Method 1: Using conda (recommended)
-./setup_test_env.sh
+# Clone the repository
+git clone https://github.com/groxaxo/mcp-code-indexer.git
+cd mcp-code-indexer
 
-# Method 2: Manual setup
-conda create -n mcp-test python=3.10 -y
-conda activate mcp-test
+# Run automated installer with development option
+./install.sh
+# Select option 3 for development installation
+```
+
+#### **Manual Setup**
+```bash
+# Create virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install in development mode
 pip install -e .
-pip install pytest pytest-asyncio pytest-cov pytest-mock
+
+# Install development dependencies
+pip install pytest pytest-asyncio pytest-cov pytest-mock ruff
 ```
 
 #### **Running Tests**
@@ -297,23 +319,10 @@ python -m pytest tests/integration/ -v
 
 # Run with coverage report
 python -m pytest tests/ --cov=mcp_code_indexer --cov-report=html
-
-# Run simple test runner (no pytest dependencies)
-python simple_test.py
 ```
 
-#### **Development Setup**
+#### **Code Formatting**
 ```bash
-# Clone the repository
-git clone https://github.com/groxaxo/mcp-code-indexer.git
-cd mcp-code-indexer
-
-# Install development dependencies
-pip install -e ".[dev]"
-
-# Run tests
-pytest
-
 # Format code
 ruff format .
 ```
